@@ -1,6 +1,5 @@
 from contextlib import asynccontextmanager
 
-import cv_evaluator.config  # noqa: F401  – načte .env před zbytkem importů
 from fastapi import FastAPI
 
 from cv_evaluator.api.routes import router
@@ -19,7 +18,6 @@ app = FastAPI(
     version="0.1.0",
     lifespan=lifespan,
 )
-
 app.include_router(router, prefix="/api/v1")
 
 

@@ -1,0 +1,44 @@
+# Python build / cache artifacts
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Virtualenvs
+.venv/
+venv/
+env/
+
+# Build outputs
+*.egg-info/
+build/
+dist/
+
+# Tests / dev tooling (do produkčního image nepatří)
+tests/
+Makefile
+
+# IDE / editor
+.vscode/
+.idea/
+*.swp
+
+# Git
+.git/
+.gitignore
+
+# Local data – mountuje se přes compose volume, COPY není potřeba
+data/chroma/
+
+# Skripty potřebné jen pro vývoj
+scripts/
+
+# Eval reporty (běží lokálně, ne v containeru)
+src/cv_evaluator/evals/reports/
+
+# OS junk
+.DS_Store
+Thumbs.db

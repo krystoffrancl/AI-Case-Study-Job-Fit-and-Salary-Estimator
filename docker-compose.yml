@@ -1,24 +1,43 @@
 services:
-    backend:
-        build: ./backend
-        ports:
-            - "8000:8000"
-        env_file:
-            - .env
-        volumes:
-            - ./backend/data:/app/data
-        healthcheck:
-            test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
-            interval: 10s
-            timeout: 5s
-            retries: 3
+  backend:
+    build:
+      context: ./backend
+    image: cv-evaluator-backend
+    container_name: cv-evaluator-backend
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    volumes:
+      # Persistuje pre-built embeddings + Chroma store mezi rebuildy.
+      - ./backend/data:/app/data
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8000/health',timeout=3).status==200 else 1)"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
 
-    frontend:
-        build: ./frontend
-        ports:
-            - "8501:8501"
-        env_file:
-            - .env
-        depends_on:
-            backend:
-                condition: service_healthy
+  frontend:
+    build:
+      context: ./frontend
+    image: cv-evaluator-frontend
+    container_name: cv-evaluator-frontend
+    restart: unless-stopped
+    ports:
+      - "8501:8501"
+    environment:
+      # Override .env hodnoty – uvnitř compose se backend resolvuje DNS jménem služby.
+      API_URL: http://backend:8000
+    env_file:
+      - .env
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8501/_stcore/health',timeout=3).status==200 else 1)"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s

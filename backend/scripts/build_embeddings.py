@@ -1,18 +1,9 @@
-"""Jednorázové vygenerování embeddingů pro pozice.
+"""Jednorázové vygenerování embeddingů pozic.
 
-Použití:
-    cd backend
-    uv run python scripts/build_embeddings.py
+    cd backend && uv run python scripts/build_embeddings.py
 
-Čte data/salaries.jsonl, pro každou pozici zavolá OpenAI embedding API
-a výsledek zapíše do data/positions_embeddings.jsonl. Soubor je pak
-načítán serverem při startu – samotný server už OpenAI pro embedding
-pozic nikdy nevolá.
-
-Pozice s `has_position_data: true` mají platové percentily (p10/p90/po
-5 letech). Pozice s `has_position_data: false` mají jen platové rozpětí
-celé skupiny (category_low/high) – v takovém případě se použije to jako
-fallback a zaznamená se `salary_source: "category"`.
+Pro pozici bez `has_position_data` použije rozpětí celé profesní skupiny
+(`category_low/high`) a zaznamená `salary_source: "category"`.
 """
 from __future__ import annotations
 
@@ -20,15 +11,12 @@ import json
 from pathlib import Path
 
 from langchain_openai import OpenAIEmbeddings
-from pydantic import SecretStr
 
-import cv_evaluator.config  # načte .env
-from cv_evaluator.config import OPENAI_API_KEY
+from cv_evaluator.config import settings
 
 DATA_DIR = Path(__file__).parent.parent / "data"
 SOURCE_PATH = DATA_DIR / "salaries.jsonl"
 OUTPUT_PATH = DATA_DIR / "positions_embeddings.jsonl"
-EMBEDDING_MODEL = "text-embedding-3-small"
 BATCH_SIZE = 100
 
 
@@ -38,7 +26,7 @@ def build_text(pos: dict) -> str:
 
 
 def build_salary_fields(pos: dict) -> dict | None:
-    """Vrátí canonical low/high/after_5y + zdroj. None = nelze odhadnout."""
+    """Canonical low/high/after_5y + zdroj. None = pozice nemá žádný plat."""
     if pos.get("has_position_data"):
         return {
             "salary_low_monthly_czk": pos["p10_monthly_czk"],
@@ -46,12 +34,9 @@ def build_salary_fields(pos: dict) -> dict | None:
             "salary_after_5_years_monthly_czk": pos.get("after_5_years_monthly_czk") or 0,
             "salary_source": "position",
         }
-
-    low = pos.get("category_low_monthly_czk")
-    high = pos.get("category_high_monthly_czk")
+    low, high = pos.get("category_low_monthly_czk"), pos.get("category_high_monthly_czk")
     if low is None or high is None:
         return None
-
     return {
         "salary_low_monthly_czk": low,
         "salary_high_monthly_czk": high,
@@ -61,7 +46,6 @@ def build_salary_fields(pos: dict) -> dict | None:
 
 
 def load_positions() -> list[tuple[dict, dict]]:
-    """Vrátí dvojice (raw_position, salary_fields) pro pozice s nějakým platem."""
     pairs: list[tuple[dict, dict]] = []
     skipped = 0
     with open(SOURCE_PATH, encoding="utf-8") as f:
@@ -73,13 +57,13 @@ def load_positions() -> list[tuple[dict, dict]]:
                 continue
             pairs.append((data, salary))
     if skipped:
-        print(f"Přeskočeno {skipped} pozic bez platových dat (ani position, ani category).")
+        print(f"Přeskočeno {skipped} pozic bez platových dat.")
     return pairs
 
 
 def main() -> None:
     if OUTPUT_PATH.exists():
-        print(f"Soubor {OUTPUT_PATH} už existuje. Smaž ho ručně, pokud chceš regenerovat.")
+        print(f"Soubor {OUTPUT_PATH} už existuje. Smaž ho ručně pro regeneraci.")
         return
 
     pairs = load_positions()
@@ -87,8 +71,8 @@ def main() -> None:
     print(f"Generuji embeddingy pro {len(pairs)} pozic v dávkách po {BATCH_SIZE}...")
 
     embedder = OpenAIEmbeddings(
-        model=EMBEDDING_MODEL,
-        api_key=SecretStr(OPENAI_API_KEY),
+        model=settings.embedding_model,
+        api_key=settings.openai_api_key,
     )
 
     vectors: list[list[float]] = []
@@ -99,7 +83,7 @@ def main() -> None:
 
     DATA_DIR.mkdir(parents=True, exist_ok=True)
     with open(OUTPUT_PATH, "w", encoding="utf-8") as f:
-        for i, ((pos, salary), text, vec) in enumerate(zip(pairs, texts, vectors)):
+        for i, ((pos, salary), text, vec) in enumerate(zip(pairs, texts, vectors, strict=True)):
             record = {
                 "id": str(i),
                 "position": pos["position"],

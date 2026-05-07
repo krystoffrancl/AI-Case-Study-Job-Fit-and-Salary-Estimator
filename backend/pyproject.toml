@@ -7,13 +7,21 @@ dependencies = [
     "uvicorn",
     "pymupdf",
     "python-docx",
-    "python-dotenv",
     "pydantic",
-    "langchain",
+    "pydantic-settings",
+    "langchain-core",
     "langchain-openai",
     "langchain-chroma",
     "python-multipart>=0.0.27",
     "chromadb>=1.5.9",
+    "numpy",
+    "tenacity",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "pytest-asyncio",
 ]
 
 [tool.uv]
@@ -25,3 +33,10 @@ build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/cv_evaluator"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+filterwarnings = [
+    "ignore::DeprecationWarning",
+]
