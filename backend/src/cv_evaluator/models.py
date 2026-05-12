@@ -5,13 +5,13 @@ proto jsou rozepsanější než běžně.
 """
 from __future__ import annotations
 
-from enum import Enum
+from enum import StrEnum
 from typing import Any, Literal
 
 from pydantic import BaseModel, Field
 
 
-class EducationLevel(str, Enum):
+class EducationLevel(StrEnum):
     HIGH_SCHOOL = "high_school"
     BACHELOR = "bachelor"
     MASTER = "master"
@@ -212,7 +212,7 @@ class Report(BaseModel):
     cost: CostSummary | None = None
 
 
-class JobStatus(str, Enum):
+class JobStatus(StrEnum):
     RECEIVED = "received"
     PARSING = "parsing"
     EXTRACTING = "extracting"

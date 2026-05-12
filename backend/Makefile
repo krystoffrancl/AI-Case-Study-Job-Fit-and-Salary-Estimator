@@ -1,4 +1,4 @@
-.PHONY: install dev test eval eval-quick eval-no-judge build-embeddings docker-up docker-down
+.PHONY: install dev test lint eval eval-quick eval-no-judge build-embeddings docker-up docker-down
 
 install:
 	uv sync --extra dev
@@ -8,6 +8,9 @@ dev:
 
 test:
 	uv run pytest tests/ -v
+
+lint:
+	uvx ruff check src/ tests/
 
 eval:
 	uv run python -m cv_evaluator.evals.runner

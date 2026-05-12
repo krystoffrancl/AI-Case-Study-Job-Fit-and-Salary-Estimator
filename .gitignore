@@ -31,3 +31,8 @@ uploads/
 *.docx
 logs/
 *.log
+
+# Runtime data – Chroma store se hydratuje z positions_embeddings.jsonl (commited).
+# Eval reporty se generují per-run.
+backend/data/chroma/
+backend/src/cv_evaluator/evals/reports/

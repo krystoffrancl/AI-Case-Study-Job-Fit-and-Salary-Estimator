@@ -4,9 +4,6 @@ from __future__ import annotations
 import asyncio
 from collections import Counter
 
-# držíme tasky aby je GC nesmetl před doběhnutím (asyncio.create_task vrací weak ref)
-_BACKGROUND_TASKS: set[asyncio.Task] = set()
-
 from fastapi import APIRouter, File, HTTPException, UploadFile
 from fastapi.responses import JSONResponse
 
@@ -24,6 +21,9 @@ from cv_evaluator.steps.quality_assessor import assess_quality
 from cv_evaluator.steps.salary_anchor import compute_anchor
 from cv_evaluator.steps.scorer import calculate_score
 from cv_evaluator.utils.logger import logger
+
+# držíme tasky aby je GC nesmetl před doběhnutím (asyncio.create_task vrací weak ref)
+_BACKGROUND_TASKS: set[asyncio.Task] = set()
 
 router = APIRouter()
 

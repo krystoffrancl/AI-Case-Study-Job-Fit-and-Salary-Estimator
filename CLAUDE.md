@@ -20,7 +20,7 @@ User-facing strings, log messages, and LLM prompts are written in **Czech** — 
 ```powershell
 # Whole stack (preferred)
 docker compose up -d --build
-# Open http://localhost:8501
+# Open http://localhost:8550   (host 8550 → container 8501; vyhýbáme se Hyper-V exclude rangu 8450-8549 na Win)
 
 # Backend only (dev)
 cd backend; uv sync; uv run uvicorn cv_evaluator.main:app --reload --host 0.0.0.0 --port 8000
@@ -29,12 +29,21 @@ cd backend; uv sync; uv run uvicorn cv_evaluator.main:app --reload --host 0.0.0.
 cd frontend; uv sync; $env:API_URL="http://localhost:8000"; uv run streamlit run app.py
 
 # Tests
-cd backend; make test          # 16 tests, ~0.1 s
-cd backend; make eval          # 17 golden CVs + LLM-as-judge
-cd backend; make eval-no-judge # without judge (cheaper)
+cd backend; make test                              # 16 tests, ~0.1 s
+cd backend; uv run pytest tests/test_scorer.py -v  # single test file
+cd backend; uv run pytest tests/test_scorer.py::test_senior_dev_high_score -v  # single test
+cd backend; make eval                              # 17 golden CVs + LLM-as-judge
+cd backend; make eval-no-judge                     # without judge (cheaper)
+cd backend; make eval-quick                        # 3 CVs, no judge (smoke test)
+
+# Lint
+cd backend; uvx ruff check src/ tests/
+
+# Regenerate position embeddings (only after editing salaries.jsonl or the embed text format)
+cd backend; make build-embeddings  # refuses to overwrite — delete data/positions_embeddings.jsonl first
 ```
 
-`OPENAI_API_KEY` is required, read via `pydantic-settings` from `.env` at module import time. Backend crashes on startup if missing.
+`OPENAI_API_KEY` is required, read via `pydantic-settings` from `.env` at the **repo root** (backend's `config.py` resolves it via parent-dir search) at module import time. Backend crashes on startup if missing. `make build-embeddings` and the eval runner also need it.
 
 ## Architecture
 

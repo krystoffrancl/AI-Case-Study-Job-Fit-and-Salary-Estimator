@@ -95,7 +95,9 @@ async def finalize_report(
         f"{growth_target.target_role if growth_target else 'None'}"
     )
     chain = _build_chain(job_id)
-    dump = lambda obj: json.dumps(obj, ensure_ascii=False, indent=2)
+
+    def dump(obj: object) -> str:
+        return json.dumps(obj, ensure_ascii=False, indent=2)
 
     result = await chain.ainvoke({
         "profile_json": dump(extracted.model_dump()),
